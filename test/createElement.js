@@ -35,4 +35,10 @@ describe('createElement', function() {
     const elem = createElement('div' , {}, child1, child2);
     assert.deepStrictEqual(elem.props.children, [{ type: 'span' }, { type: 'p' }]);
   });
+
+  it('should allow functional component types', function() {
+    const Component = () => ({ type: 'div' });
+    const elem = createElement(Component);
+    assert.strictEqual(typeof elem.type, 'function');
+  });
 });
