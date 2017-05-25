@@ -1,7 +1,20 @@
-function createElement(type, props) {
-  // the following excludes children prop from props in created element
-  if (props && props.children !== undefined && props.children !== null) {
-    delete props.children;
+const flatten = require('lodash.flatten');
+
+function createElement(type, passedProps) {
+  let props = passedProps || {};
+  let children = [].slice.call(arguments, 2);
+
+  const hasChildren = children.length > 0;
+  if (hasChildren) {
+    // the following flattens children single level deep
+    children = flatten(children);
+
+    // the following adds the children as a prop
+    props = Object.assign(
+      {},
+      props,
+      { children }
+    );
   }
 
   return {
