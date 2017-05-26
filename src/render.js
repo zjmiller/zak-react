@@ -2,18 +2,33 @@ const prevRenders = new Map();
 
 export default function render(domNode, element) {
   if (prevRenders.has(domNode)) {
-    const queue = [[element, prevRenders.get(domNode), domNode.firstChild]];
+    const queue = [[element, prevRenders.get(domNode), domNode.firstChild, domNode]];
     while (queue.length > 0) {
-      const curTriple = queue.shift();
-      const curElement = curTriple[0];
-      const prevElement = curTriple[1];
-      const curDOMNode = curTriple[2];
+      const curPoint = queue.shift();
+      const curElement = curPoint[0];
+      const prevElement = curPoint[1];
+      const curDOMNode = curPoint[2];
+      const curParent = curPoint[3];
 
-      if (curElement.type !== prevElement.type) {
+      // node to get rid of
+      if (curElement === undefined) {
+        curDOMNode.remove();
+        continue;
+      }
+
+      // no prev node to diff w/
+      if (prevElement === undefined) {
+        const renderedDOMNode = turnIntoDOMNode(curElement);
+        curParent.innerHTML = '';
+        curParent.appendChild(renderedDOMNode);
+      }
+
+      // prev node to diff w/
+      if (prevElement && curElement.type !== prevElement.type) {
         // if types differ just rerender everything
         const renderedDOMNode = turnIntoDOMNode(curElement);
-        curDOMNode.innerHTML = '';
-        curDOMNode.appendChild(renderedDOMNode);
+        curParent.innerHTML = '';
+        curParent.appendChild(renderedDOMNode);
       } else {
         const curElementPropNames = Object.keys(curElement.props);
         const prevElementPropNames = Object.keys(prevElement.props);
@@ -33,6 +48,20 @@ export default function render(domNode, element) {
         prevElementPropNames.forEach(propName => {
           if (curElementPropNames.indexOf(propName) === -1) delete curDOMNode[propName];
         });
+
+        // add children to add to queue
+        let j = 0;
+        curElement.props.children && curElement.props.children.forEach((child, i) => {
+          queue.shift([child, prevElement.children[i], curDOMNode.childNodes[i], curParent]);
+          j++;
+        });
+
+        // add children to take away to queue
+        if (prevElement.props.children && prevElement.props.children.length > j) {
+          for (let i = j; j < prevElement.props.children.length; j++) {
+            queue.shift([undefined, prevElement.children[j], curDOMNode.childNodes[j], curParent]);
+          }
+        }
       }
     }
   } else {
